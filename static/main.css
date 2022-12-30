@@ -1,0 +1,102 @@
+:root {
+    --flat-ui-aqua: #1abc9c;
+    --flat-ui-dark-aqua: #16a085;
+    --flat-ui-green: #2ecc71;
+    --flat-ui-dark-green: #27ae60;
+    --flat-ui-blue: #3498db;
+    --flat-ui-dark-blue: #2980b9;
+    --flat-ui-purple: #9b59b6;
+    --flat-ui-dark-purple: #8e44ad;
+    --flat-ui-black: #34495e;
+    --flat-ui-dark-black: #2c3e50;
+    --flat-ui-yellow: #f1c40f;
+    --flat-ui-dark-yellow: #f39c12;
+    --flat-ui-orange: #e67e22;
+    --flat-ui-dark-orange: #d35400;
+    --flat-ui-red: #e74c3c;
+    --flat-ui-dark-red: #c0392b;
+    --flat-ui-white: #ecf0f1;
+    --flat-ui-dark-white: #bdc3c7;
+    --flat-ui-grey: #95a5a6;
+    --flat-ui-dark-grey: #7f8c8d;
+
+    --color-primary-background: #775f48;
+}
+
+body {
+    background: var(--flat-ui-white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    font-family: sans-serif;
+}
+
+header {
+    background: var(--color-primary-background);
+    color: white;
+    position: sticky;
+    top: 0;
+    padding: 5pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 40pt;
+}
+
+.simple-table th, .simple-table td {
+    border: solid 1px black;
+    padding: 2pt;
+}
+
+#header-right {
+    display: flex;
+    gap: 10pt;
+}
+
+footer {
+    background: var(--color-primary-background);
+    width: 100vw;
+    min-height: 50pt;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10pt;
+}
+
+.bold-link {
+    text-decoration: none;
+    text-transform: uppercase;
+    color: var(--flat-ui-white);
+}
+
+.bold-link:visited {
+    color: var(--flat-ui-white);
+}
+
+h1 {
+    font-size: 2.5em;
+    font-weight: bold;
+}
+
+h2 {
+    font-size: 2.2em;
+    font-weight: bold;
+}
+
+h3 {
+    font-size: 2em;
+}
+
+h4 {
+    font-size: 1.7em;
+}
+
+h5 {
+    font-size: 1.5em;
+}
+
+h6 {
+    font-size: 1.2em;
+}

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+    {{! This is the landing page of the website. }}
+<html lang="en">
+    <head>
+        {{> components/common-head }}
+        <link rel="stylesheet" href="/static/index.css">
+        <script src="/static/index.js"></script>
+    </head>
+    <body>
+
+        {{> components/header }}
+
+        {{this.user_id}}
+
+        <div id="body-content">
+            <table id="table-products" class="simple-table">
+                <thead>
+                <tr><th>Id</th><th>Name</th><th>Description</th><th>Price</th><th>Image URI</th><th>Active</th></tr>
+                </thead>
+                <tbody>
+                {{#each products}}
+                    <tr id="table-products-row-{{this.id}}"><td>{{this.id}}</td><td>{{this.name}}</td><td>{{this.description}}</td><td>{{this.price}}</td><td>{{this.image_uri}}</td><td>{{this.is_active}}</td></tr>
+                {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        {{> components/footer }}
+
+    </body>
+</html>

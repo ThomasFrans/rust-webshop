@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+    {{! This is the login page of the website. }}
+<html lang="en">
+<head>
+    {{> components/common-head }}
+    <script src="/static/login.js"></script>
+    <link rel="stylesheet" href="/static/login.css">
+</head>
+    <body>
+
+    {{> components/header }}
+
+    <div id="body-content">
+        <form id="form-login" onsubmit="return login()">
+            <label for="form-login-email">Email</label>
+            <input id="form-login-email" name="email" type="email"><br>
+            <label for="form-login-password">Password</label>
+            <input id="form-login-password" name="password" type="password"><br>
+            <input type="submit" value="Login">
+            {{#if this.logged_in}}<input type="button" onclick="return logout()" value="Logout">{{/if}}
+            <input type="button" onclick="console.log('Register user.')" value="Register">
+        </form>
+    </div>
+
+    {{> components/footer }}
+
+    </body>
+</html>
