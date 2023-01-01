@@ -1,6 +1,9 @@
 # Rust Webshop
 A fictional webshop that sells stickers to put on your laptop, written in Rust using Rocket, Diesel and sqlx. This project started because I had just completed an assignment to write a webshop in PHP, and felt like Rust could do it better. It appears I was right, as development in Rust hans't only been simpler, but also much more fun! I hope that this can be an example/inspiration for other people who want to start with web development in Rust, but don't really know where to start.
 
+# Code style
+- Clippy is completely broken when using Rocket macros, so clippy isn't used at all.
+
 # Crates used
 - Rocket: Used as the web server;
 - Diesel: Originally used for both the ORM capabilities and the migrations, but now only for migrations;
