@@ -96,3 +96,48 @@ function addProduct() {
 
     return false;
 }
+
+function editProduct() {
+    let form = document.forms["form-edit-product"];
+    let product_id = form["product_id"].value;
+    let name = form["name"].value;
+    let description = form["description"].value;
+    let image_uri = form["image_uri"].value;
+    let price = form["price"].value;
+
+    let request = new XMLHttpRequest();
+    let api_endpoint = "/api/products/edit";
+    let form_data = new FormData();
+    form_data.append("product_id", product_id === "" ? null : product_id);
+    if (name !== "") {
+        form_data.append("name", name === "" ? null : name);
+    }
+    if (description !== "") {
+        form_data.append("description", description === "" ? null : description);
+    }
+    if (image_uri !== "") {
+        form_data.append("image_uri", image_uri);
+    }
+    if (price !== "") {
+        form_data.append("price", price);
+    }
+
+    request.onreadystatechange = function() {
+        if (this.readyState === 4) {
+            if (this.status === 200) {
+                let product_table = document.getElementById("table-products-row-" + product_id);
+                let response = JSON.parse(this.responseText);
+                form.reset();
+
+                product_table.outerHTML = "<tr id=\"table-products-row-"+response["product_id"]+"\"><td>"+response["product_id"]+"</td><td>"+response["name"]+"</td><td>"+response["description"]+"</td><td>"+response["price"]+"</td><td>"+response["image_uri"]+"</td><td>"+response["is_active"]+"</td></tr>";
+            } else {
+                alert("Failed to update product!")
+            }
+        }
+    };
+
+    request.open("POST", api_endpoint);
+    request.send(form_data);
+
+    return false;
+}

@@ -21,6 +21,11 @@
     --flat-ui-dark-grey: #7f8c8d;
 
     --color-primary-background: #775f48;
+    --color-secondary-background: #cea177;
+}
+
+.secondary-background {
+    background: var(--color-secondary-background);
 }
 
 body {
@@ -43,6 +48,13 @@ header {
     justify-content: space-between;
     align-items: center;
     min-height: 40pt;
+}
+
+.card {
+    border: solid 1px black;
+    border-radius: 5pt;
+    width: fit-content;
+    padding: 5pt;
 }
 
 .simple-table th, .simple-table td {

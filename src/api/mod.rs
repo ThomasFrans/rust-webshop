@@ -1,3 +1,3 @@
-pub mod users;
 pub mod login;
 pub mod products;
+pub mod users;

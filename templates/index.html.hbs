@@ -10,19 +10,22 @@
 
         {{> components/header }}
 
-        {{this.user_id}}
-
         <div id="body-content">
-            <table id="table-products" class="simple-table">
-                <thead>
-                <tr><th>Id</th><th>Name</th><th>Description</th><th>Price</th><th>Image URI</th><th>Active</th></tr>
-                </thead>
-                <tbody>
+            <div id="product-list">
                 {{#each products}}
-                    <tr id="table-products-row-{{this.id}}"><td>{{this.id}}</td><td>{{this.name}}</td><td>{{this.description}}</td><td>{{this.price}}</td><td>{{this.image_uri}}</td><td>{{this.is_active}}</td></tr>
+                <div class="product-card card secondary-background">
+                    <div class="product-info">
+                        <h5>{{this.name}}</h5>
+                        <p>
+                            {{this.description}}
+                        </p>
+                    </div>
+                    <div>
+                        <img src="{{this.image_uri}}" alt="{{this.name}}" class="product-image">
+                    </div>
+                </div>
                 {{/each}}
-                </tbody>
-            </table>
+            </div>
         </div>
 
         {{> components/footer }}

@@ -2,3 +2,32 @@
     flex: 1;
     padding: 10pt;
 }
+
+.product-card {
+    height: 100pt;
+    width: auto;
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+}
+
+.product-info {
+    flex: 1;
+    display: flex;
+    gap: 10pt;
+    flex-direction: column;
+}
+
+.product-image {
+    max-width: 100pt;
+    max-height:100pt;
+    width: auto;
+    height: auto;
+}
+
+#product-list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10pt;
+}

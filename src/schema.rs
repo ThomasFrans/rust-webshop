@@ -33,8 +33,4 @@ diesel::table! {
 
 diesel::joinable!(item -> product (product_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    item,
-    product,
-    user,
-);
+diesel::allow_tables_to_appear_in_same_query!(item, product, user,);

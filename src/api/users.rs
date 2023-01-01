@@ -1,9 +1,9 @@
+use crate::{database::WebshopDatabase, AdminGuard};
 use rocket::form::Form;
-use rocket::http::{Status};
-use rocket::serde::{Serialize, json::Json};
-use rocket_db_pools::sqlx::{Row};
+use rocket::http::Status;
+use rocket::serde::{json::Json, Serialize};
+use rocket_db_pools::sqlx::Row;
 use rocket_db_pools::{sqlx, Connection};
-use crate::{AdminGuard, WebshopDatabase};
 
 #[derive(Debug, FromForm)]
 pub struct FormNewUser<'a> {
@@ -30,9 +30,22 @@ pub struct User {
 }
 
 #[post("/users/add", data = "<new_user>")]
-pub async fn add(mut db: Connection<WebshopDatabase>, new_user: Form<FormNewUser<'_>>) -> Result<Json<User>, Status> {
-    let row = sqlx::query!("INSERT INTO user VALUES (NULL, ?, ?, ?, ?, ?, 1, ?) RETURNING *", new_user.first_name, new_user.surname, new_user.phone, new_user.email, bcrypt::hash(new_user.password, bcrypt::DEFAULT_COST).unwrap(), new_user.is_admin)
-        .fetch_one(&mut *db).await.map_err(|_| Status::from_code(400).unwrap())?;
+pub async fn add(
+    mut db: Connection<WebshopDatabase>,
+    new_user: Form<FormNewUser<'_>>,
+) -> Result<Json<User>, Status> {
+    let row = sqlx::query!(
+        "INSERT INTO user VALUES (NULL, ?, ?, ?, ?, ?, 1, ?) RETURNING *",
+        new_user.first_name,
+        new_user.surname,
+        new_user.phone,
+        new_user.email,
+        bcrypt::hash(new_user.password, bcrypt::DEFAULT_COST).unwrap(),
+        new_user.is_admin
+    )
+    .fetch_one(&mut *db)
+    .await
+    .map_err(|_| Status::from_code(400).unwrap())?;
     Ok(Json(User {
         user_id: row.get(0),
         first_name: row.get(1),
@@ -49,8 +62,17 @@ pub async fn add(mut db: Connection<WebshopDatabase>, new_user: Form<FormNewUser
 pub struct UserId(u64);
 
 #[delete("/users/remove", data = "<id>")]
-pub async fn remove(mut db: Connection<WebshopDatabase>, id: Form<UserId>, _admin: AdminGuard) -> Result<(), Status> {
-    sqlx::query!("UPDATE `user` SET `is_active` = 0 WHERE `user_id` = ?", id.0)
-        .execute(&mut *db).await.map_err(|_| Status::from_code(400).unwrap())?;
+pub async fn remove(
+    mut db: Connection<WebshopDatabase>,
+    id: Form<UserId>,
+    _admin: AdminGuard,
+) -> Result<(), Status> {
+    sqlx::query!(
+        "UPDATE `user` SET `is_active` = 0 WHERE `user_id` = ?",
+        id.0
+    )
+    .execute(&mut *db)
+    .await
+    .map_err(|_| Status::from_code(400).unwrap())?;
     Ok(())
 }

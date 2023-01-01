@@ -1,19 +1,17 @@
 #[macro_use]
 extern crate rocket;
 
+use crate::database::WebshopDatabase;
 use rocket::fs::FileServer;
-use rocket::{Build, Request, Rocket};
 use rocket::http::{CookieJar, Status};
 use rocket::request::{FromRequest, Outcome};
-use rocket_db_pools::sqlx::{Row};
+use rocket::{Build, Request, Rocket};
+use rocket_db_pools::sqlx::Row;
 use rocket_db_pools::{sqlx, Connection, Database};
 use rocket_dyn_templates::{context, Template};
 
 mod api;
-
-#[derive(Database)]
-#[database("mysql_webshop")]
-pub struct WebshopDatabase(sqlx::MySqlPool);
+mod database;
 
 #[get("/")]
 async fn index(mut db: Connection<WebshopDatabase>, cookiejar: &CookieJar<'_>) -> Template {
@@ -47,7 +45,7 @@ async fn login(cookiejar: &CookieJar<'_>) -> Template {
     Template::render(
         "login",
         context! {
-            logged_in: cookiejar.get_private("admin").is_some()
+            logged_in: cookiejar.get_private("userid").is_some()
         },
     )
 }
@@ -91,7 +89,12 @@ impl<'r> FromRequest<'r> for UserIdGuard {
 }
 
 #[get("/admin")]
-async fn admin(mut db: Connection<WebshopDatabase>, cookiejar: &CookieJar<'_>, userid: UserIdGuard, _admin: AdminGuard) -> Result<Template, Status> {
+async fn admin(
+    mut db: Connection<WebshopDatabase>,
+    cookiejar: &CookieJar<'_>,
+    userid: UserIdGuard,
+    _admin: AdminGuard,
+) -> Result<Template, Status> {
     println!("{}", userid.0);
     let people = sqlx::query("SELECT * FROM user")
         .fetch_all(&mut *db)
@@ -133,23 +136,30 @@ async fn admin(mut db: Connection<WebshopDatabase>, cookiejar: &CookieJar<'_>, u
             people,
             products,
             logged_in: cookiejar.get_private("admin").is_some()
-        }
+        },
     ))
 }
 
 #[catch(401)]
 async fn unauthorized() -> Template {
-    Template::render(
-        "error/401",
-        context! {}
-    )
+    Template::render("error/401", context! {})
 }
 
 #[launch]
 fn rocket() -> Rocket<Build> {
     rocket::build()
         .mount("/", routes![index, login, admin])
-        .mount("/api/", routes![api::users::add, api::users::remove, api::login::login, api::login::logout, api::products::add])
+        .mount(
+            "/api/",
+            routes![
+                api::users::add,
+                api::users::remove,
+                api::login::login,
+                api::login::logout,
+                api::products::add,
+                api::products::edit
+            ],
+        )
         .mount("/static/", FileServer::from("static/"))
         .register("/", catchers![unauthorized])
         .attach(Template::fairing())
