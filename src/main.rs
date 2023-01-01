@@ -12,6 +12,7 @@ use rocket_dyn_templates::{context, Template};
 
 mod api;
 mod database;
+mod schema;
 
 #[get("/")]
 async fn index(mut db: Connection<WebshopDatabase>, cookiejar: &CookieJar<'_>) -> Template {
@@ -50,7 +51,7 @@ async fn login(cookiejar: &CookieJar<'_>) -> Template {
     )
 }
 
-pub struct AdminGuard();
+pub struct AdminGuard;
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AdminGuard {
@@ -59,7 +60,7 @@ impl<'r> FromRequest<'r> for AdminGuard {
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let cookies = request.cookies();
         if let Some(_cookie) = cookies.get_private("admin") {
-            Outcome::Success(AdminGuard())
+            Outcome::Success(AdminGuard)
         } else {
             Outcome::Failure((Status::Unauthorized, AdminKeyError::Invalid))
         }

@@ -1,9 +1,8 @@
-use crate::{database::WebshopDatabase, AdminGuard};
+use crate::{database, database::WebshopDatabase, AdminGuard};
 use rocket::form::Form;
 use rocket::http::Status;
 use rocket::serde::{json::Json, Serialize};
-use rocket_db_pools::sqlx::Row;
-use rocket_db_pools::{sqlx, Connection};
+use rocket_db_pools::Connection;
 
 #[derive(Debug, FromForm)]
 pub struct FormNewUser<'a> {
@@ -33,29 +32,18 @@ pub struct User {
 pub async fn add(
     mut db: Connection<WebshopDatabase>,
     new_user: Form<FormNewUser<'_>>,
-) -> Result<Json<User>, Status> {
-    let row = sqlx::query!(
-        "INSERT INTO user VALUES (NULL, ?, ?, ?, ?, ?, 1, ?) RETURNING *",
-        new_user.first_name,
-        new_user.surname,
-        new_user.phone,
-        new_user.email,
-        bcrypt::hash(new_user.password, bcrypt::DEFAULT_COST).unwrap(),
-        new_user.is_admin
-    )
-    .fetch_one(&mut *db)
-    .await
-    .map_err(|_| Status::from_code(400).unwrap())?;
-    Ok(Json(User {
-        user_id: row.get(0),
-        first_name: row.get(1),
-        surname: row.get(2),
-        phone: row.get(3),
-        email: row.get(4),
-        password: row.get(5),
-        is_active: row.get(6),
-        is_admin: row.get(7),
-    }))
+) -> Result<Json<u64>, Status> {
+    let user_id = database::create_user(&mut db, &database::NewUser {
+        first_name: new_user.first_name,
+        surname: new_user.surname,
+        phone: new_user.phone,
+        email: new_user.email,
+        password: &bcrypt::hash(new_user.password, bcrypt::DEFAULT_COST).map_err(|_| Status::BadRequest)?,
+        is_admin: new_user.is_admin,
+    })
+        .await
+        .map_err(|_| Status::BadRequest)?;
+    Ok(Json(user_id))
 }
 
 #[derive(Debug, FromForm)]
@@ -67,12 +55,7 @@ pub async fn remove(
     id: Form<UserId>,
     _admin: AdminGuard,
 ) -> Result<(), Status> {
-    sqlx::query!(
-        "UPDATE `user` SET `is_active` = 0 WHERE `user_id` = ?",
-        id.0
-    )
-    .execute(&mut *db)
-    .await
-    .map_err(|_| Status::from_code(400).unwrap())?;
-    Ok(())
+    database::delete_user(&mut db, id.0)
+        .await
+        .map_err(|_| Status::BadRequest)
 }

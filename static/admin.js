@@ -24,7 +24,7 @@ function addUser() {
                 let response = JSON.parse(this.responseText);
                 form.reset();
 
-                user_table.innerHTML += "<tr id=\"user-table-row-"+response["user_id"]+"\"><td>"+response["user_id"]+"</td><td>"+response["first_name"]+"</td><td>"+response["surname"]+"</td><td>"+response["phone"]+"</td><td>"+response["email"]+"</td><td>"+response["password"]+"</td><td>"+response["is_active"]+"</td><td>"+response["is_admin"]+"</td></tr>";
+                user_table.innerHTML += "<tr id=\"user-table-row-"+response["user_id"]+"\"><td>"+response["user_id"]+"</td><td>"+first_name+"</td><td>"+surname+"</td><td>"+phone+"</td><td>"+email+"</td><td>"+password+"</td><td>"+1+"</td><td>"+is_admin+"</td></tr>";
             } else {
                 alert("Email already in use. Use a different email.")
             }
@@ -84,7 +84,7 @@ function addProduct() {
                 let response = JSON.parse(this.responseText);
                 form.reset();
 
-                product_table.innerHTML += "<tr id=\"table-products-row-"+response["product_id"]+"\"><td>"+response["product_id"]+"</td><td>"+response["name"]+"</td><td>"+response["description"]+"</td><td>"+response["price"]+"</td><td>"+response["image_uri"]+"</td><td>"+response["is_active"]+"</td></tr>";
+                product_table.innerHTML += "<tr id=\"table-products-row-"+response+"\"><td>"+response+"</td><td>"+name+"</td><td>"+description+"</td><td>"+price+"</td><td>"+image_uri+"</td><td>1</td></tr>";
             } else {
                 alert("Email already in use. Use a different email.")
             }
@@ -129,7 +129,7 @@ function editProduct() {
                 let response = JSON.parse(this.responseText);
                 form.reset();
 
-                product_table.outerHTML = "<tr id=\"table-products-row-"+response["product_id"]+"\"><td>"+response["product_id"]+"</td><td>"+response["name"]+"</td><td>"+response["description"]+"</td><td>"+response["price"]+"</td><td>"+response["image_uri"]+"</td><td>"+response["is_active"]+"</td></tr>";
+                product_table.outerHTML = "<tr id=\"table-products-row-"+response+"\"><td>"+response+"</td><td>"+response["name"]+"</td><td>"+response["description"]+"</td><td>"+response["price"]+"</td><td>"+response["image_uri"]+"</td><td>"+response["is_active"]+"</td></tr>";
             } else {
                 alert("Failed to update product!")
             }

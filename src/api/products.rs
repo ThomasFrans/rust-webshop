@@ -1,10 +1,9 @@
-use crate::database::{DatabaseError, Product, UpdateProduct, WebshopDatabase};
+use crate::database::{create_product, DatabaseError, Product, UpdateProduct, WebshopDatabase};
 use crate::{database, AdminGuard};
 use rocket::form::{Form, FromForm};
 use rocket::http::Status;
 use rocket::serde::json::Json;
-use rocket_db_pools::sqlx::Row;
-use rocket_db_pools::{sqlx, Connection};
+use rocket_db_pools::Connection;
 
 #[derive(FromForm, Default)]
 pub struct NewProduct<'a> {
@@ -19,25 +18,16 @@ pub async fn add(
     product: Form<NewProduct<'_>>,
     mut database: Connection<WebshopDatabase>,
     _admin: AdminGuard,
-) -> Result<Json<Product>, Status> {
-    let row = sqlx::query!(
-        "INSERT INTO `product` VALUES (NULL, ?, ?, ?, 1, ?) RETURNING *",
-        product.name,
-        product.description,
-        product.image_uri,
-        product.price
-    )
-    .fetch_one(&mut *database)
-    .await
-    .map_err(|_| Status::from_code(400).unwrap())?;
-    Ok(Json(Product {
-        product_id: row.get(0),
-        name: row.get(1),
-        description: row.get(2),
-        image_uri: row.get(3),
-        is_active: row.get(4),
-        price: row.get(5),
-    }))
+) -> Result<Json<u64>, Status> {
+    let product_id = create_product(&mut database, database::NewProduct {
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        image_uri: product.image_uri,
+    })
+        .await
+        .map_err(|_| Status::BadRequest)?;
+    Ok(Json(product_id))
 }
 
 #[post("/products/edit", data = "<update>")]

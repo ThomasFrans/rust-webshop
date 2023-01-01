@@ -1,7 +1,7 @@
-use crate::database::WebshopDatabase;
+use crate::database::{user_with_email, WebshopDatabase};
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar, Status};
-use rocket_db_pools::{sqlx, Connection};
+use rocket_db_pools::Connection;
 
 #[derive(Debug, FromForm)]
 pub struct LoginData<'a> {
@@ -15,23 +15,19 @@ pub async fn login(
     cookiejar: &CookieJar<'_>,
     login: Form<LoginData<'_>>,
 ) -> Result<(), Status> {
-    let user_row = sqlx::query!(
-        "SELECT `user_id`, `email`, `password`, `is_admin` FROM `user` WHERE `email` = ?",
-        login.email
-    )
-    .fetch_one(&mut *db)
-    .await
-    .map_err(|_| Status::from_code(400).unwrap())?;
+    let user_row = user_with_email(&mut db, login.email)
+        .await
+        .map_err(|_| Status::InternalServerError)?;
     if bcrypt::verify(login.password, &user_row.password)
-        .map_err(|_| Status::from_code(500).unwrap())?
+        .map_err(|_| Status::InternalServerError)?
     {
         cookiejar.add_private(Cookie::new("userid", user_row.user_id.to_string()));
-        if user_row.is_admin != 0 {
+        if user_row.is_admin {
             cookiejar.add_private(Cookie::new("admin", "true"));
         }
         Ok(())
     } else {
-        Err(Status::from_code(400).unwrap())
+        Err(Status::BadRequest)
     }
 }
 
