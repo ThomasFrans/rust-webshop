@@ -1,3 +1,4 @@
 /target
+/static/product-images
 .env
 Rocket.toml
