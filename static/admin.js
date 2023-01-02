@@ -24,7 +24,7 @@ function addUser() {
                 let response = JSON.parse(this.responseText);
                 form.reset();
 
-                user_table.innerHTML += "<tr id=\"user-table-row-"+response["user_id"]+"\"><td>"+response["user_id"]+"</td><td>"+first_name+"</td><td>"+surname+"</td><td>"+phone+"</td><td>"+email+"</td><td>"+password+"</td><td>"+1+"</td><td>"+is_admin+"</td></tr>";
+                user_table.innerHTML += "<tr id=\"user-table-row-"+response["user_id"]+"\"><td>"+response["user_id"]+"</td><td>"+first_name+"</td><td>"+surname+"</td><td>"+phone+"</td><td>"+email+"</td><td>"+response["password"]+"</td><td>true</td><td>"+is_admin+"</td></tr>";
             } else {
                 alert("Email already in use. Use a different email.")
             }

@@ -45,7 +45,7 @@
                 </thead>
                 <tbody>
                 {{#each people}}
-                    <tr id="table-users-row-{{this.id}}"><td>{{this.id}}</td><td>{{this.first_name}}</td><td>{{this.surname}}</td><td>{{this.phone}}</td><td>{{this.email}}</td><td>{{this.password}}</td><td>{{this.is_active}}</td><td>{{this.is_admin}}</td></tr>
+                    <tr id="table-users-row-{{this.user_id}}"><td>{{this.user_id}}</td><td>{{this.first_name}}</td><td>{{this.surname}}</td><td>{{this.phone}}</td><td>{{this.email}}</td><td>{{this.password}}</td><td>{{this.is_active}}</td><td>{{this.is_admin}}</td></tr>
                 {{/each}}
                 </tbody>
             </table>
@@ -87,8 +87,8 @@
                 <tr><th>Id</th><th>Name</th><th>Description</th><th>Price</th><th>Image URI</th><th>Active</th></tr>
                 </thead>
                 <tbody>
-                {{#each products}}
-                    <tr id="table-products-row-{{this.id}}"><td>{{this.id}}</td><td>{{this.name}}</td><td>{{this.description}}</td><td>{{this.price}}</td><td>{{this.image_uri}}</td><td>{{this.is_active}}</td></tr>
+                {{#each db_products}}
+                    <tr id="table-products-row-{{this.product_id}}"><td>{{this.product_id}}</td><td>{{this.name}}</td><td>{{this.description}}</td><td>{{this.price}}</td><td>{{this.image_uri}}</td><td>{{this.is_active}}</td></tr>
                 {{/each}}
                 </tbody>
             </table>

@@ -1,44 +1,36 @@
 #[macro_use]
 extern crate rocket;
+#[macro_use]
+extern crate diesel;
 
+use crate::database::models::{Product, User};
 use crate::database::WebshopDatabase;
+use crate::schema::products::dsl::products;
+use crate::schema::users::dsl::users;
+use diesel::RunQueryDsl;
 use rocket::fs::FileServer;
 use rocket::http::{CookieJar, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket::{Build, Request, Rocket};
-use rocket_db_pools::sqlx::Row;
-use rocket_db_pools::{sqlx, Connection, Database};
 use rocket_dyn_templates::{context, Template};
 
 mod api;
 mod database;
+mod ext_traits;
 mod schema;
 
 #[get("/")]
-async fn index(mut db: Connection<WebshopDatabase>, cookiejar: &CookieJar<'_>) -> Template {
-    let products = sqlx::query("SELECT * FROM `product`")
-        .fetch_all(&mut *db)
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|row| {
-            context! {
-                id: row.get::<u64, _>("product_id"),
-                name: row.get::<String, _>("name"),
-                description: row.get::<String, _>("description"),
-                price: row.get::<f32, _>("price"),
-                image_uri: row.get::<String, _>("image_uri"),
-                is_active: row.get::<bool, _>("is_active"),
-            }
-        })
-        .collect::<Vec<_>>();
-    Template::render(
+async fn index(mut db: WebshopDatabase, cookiejar: &CookieJar<'_>) -> Result<Template, Status> {
+    let db_products = db
+        .run(|c| products.load::<Product>(c).map_err(|_| Status::BadRequest))
+        .await?;
+    Ok(Template::render(
         "index",
         context! {
-            products,
+            db_products,
             logged_in: cookiejar.get_private("admin").is_some(),
         },
-    )
+    ))
 }
 
 #[get("/login")]
@@ -91,51 +83,23 @@ impl<'r> FromRequest<'r> for UserIdGuard {
 
 #[get("/admin")]
 async fn admin(
-    mut db: Connection<WebshopDatabase>,
+    mut db: WebshopDatabase,
     cookiejar: &CookieJar<'_>,
-    userid: UserIdGuard,
+    _userid: UserIdGuard,
     _admin: AdminGuard,
 ) -> Result<Template, Status> {
-    println!("{}", userid.0);
-    let people = sqlx::query("SELECT * FROM user")
-        .fetch_all(&mut *db)
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|row| {
-            context!(
-                id: row.get::<u64, _>("user_id"),
-                first_name: row.get::<String, _>("first_name"),
-                surname: row.get::<String, _>("surname"),
-                phone: row.get::<String, _>("phone"),
-                email: row.get::<String, _>("email"),
-                password: row.get::<String, _>("password"),
-                is_active: row.get::<bool, _>("is_active"),
-                is_admin: row.get::<bool, _>("is_admin")
-            )
-        })
-        .collect::<Vec<_>>();
-    let products = sqlx::query("SELECT * FROM `product`")
-        .fetch_all(&mut *db)
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|row| {
-            context! {
-                id: row.get::<u64, _>("product_id"),
-                name: row.get::<String, _>("name"),
-                description: row.get::<String, _>("description"),
-                price: row.get::<f32, _>("price"),
-                image_uri: row.get::<String, _>("image_uri"),
-                is_active: row.get::<bool, _>("is_active"),
-            }
-        })
-        .collect::<Vec<_>>();
+    let people = db
+        .run(|c| users.load::<User>(c).map_err(|_| Status::BadRequest))
+        .await?;
+
+    let db_products = db
+        .run(|c| products.load::<Product>(c).map_err(|_| Status::BadRequest))
+        .await?;
     Ok(Template::render(
         "admin",
         context! {
             people,
-            products,
+            db_products,
             logged_in: cookiejar.get_private("admin").is_some()
         },
     ))
@@ -157,12 +121,12 @@ fn rocket() -> Rocket<Build> {
                 api::users::remove,
                 api::login::login,
                 api::login::logout,
-                api::products::add,
-                api::products::edit
+                // api::products::add,
+                // api::products::edit
             ],
         )
         .mount("/static/", FileServer::from("static/"))
         .register("/", catchers![unauthorized])
         .attach(Template::fairing())
-        .attach(WebshopDatabase::init())
+        .attach(WebshopDatabase::fairing())
 }

@@ -1,7 +1,6 @@
 use crate::database::{user_with_email, WebshopDatabase};
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar, Status};
-use rocket_db_pools::Connection;
 
 #[derive(Debug, FromForm)]
 pub struct LoginData<'a> {
@@ -11,15 +10,16 @@ pub struct LoginData<'a> {
 
 #[post("/login", data = "<login>")]
 pub async fn login(
-    mut db: Connection<WebshopDatabase>,
+    mut db: WebshopDatabase,
     cookiejar: &CookieJar<'_>,
     login: Form<LoginData<'_>>,
 ) -> Result<(), Status> {
     let user_row = user_with_email(&mut db, login.email)
         .await
         .map_err(|_| Status::InternalServerError)?;
-    if bcrypt::verify(login.password, &user_row.password)
-        .map_err(|_| Status::InternalServerError)?
+    if user_row.is_active
+        && bcrypt::verify(login.password, &user_row.password)
+            .map_err(|_| Status::InternalServerError)?
     {
         cookiejar.add_private(Cookie::new("userid", user_row.user_id.to_string()));
         if user_row.is_admin {

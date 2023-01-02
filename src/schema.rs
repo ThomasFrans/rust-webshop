@@ -1,26 +1,26 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    item (item_id) {
-        item_id -> Unsigned<Bigint>,
-        product_id -> Unsigned<Bigint>,
+    items (item_id) {
+        item_id -> Int8,
+        product_id -> Int8,
     }
 }
 
 diesel::table! {
-    product (product_id) {
-        product_id -> Unsigned<Bigint>,
+    products (product_id) {
+        product_id -> Int8,
         name -> Varchar,
         description -> Nullable<Varchar>,
         image_uri -> Varchar,
         is_active -> Bool,
-        price -> Unsigned<Float>,
+        price -> Float4,
     }
 }
 
 diesel::table! {
-    user (user_id) {
-        user_id -> Unsigned<Bigint>,
+    users (user_id) {
+        user_id -> Int8,
         first_name -> Varchar,
         surname -> Varchar,
         phone -> Varchar,
@@ -31,6 +31,6 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(item -> product (product_id));
+diesel::joinable!(items -> products (product_id));
 
-diesel::allow_tables_to_appear_in_same_query!(item, product, user,);
+diesel::allow_tables_to_appear_in_same_query!(items, products, users,);
