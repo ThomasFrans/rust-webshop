@@ -1,0 +1,8 @@
+# The containers that need to run.
+services:
+  webshop:
+    # The name of the image (`docker build --tag=webshop:0.1.0`)
+    image: webshop:0.1.0
+    # If this service uses an image from source, this is the local directory containing its Dockerfile.
+    build: .
+    network_mode: host
