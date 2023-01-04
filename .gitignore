@@ -1,4 +1,12 @@
+# Rust build artifacts.
 /target
-/static/product-images
-.env
+
+# Rocket framework runtime configuration.
 Rocket.toml
+
+# Webshop runtime files.
+/static/product-images
+
+# Environment configuration.
+.env
+

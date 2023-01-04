@@ -1,2 +1,21 @@
+# Files that should be excluded from the build context when creating an image
+# from ./Dockerfile. Files excluded from the build context are ignored by Docker
+# when changed, and are not available to COPY instructions.
+
+# Rust build artifacts.
 target/
-.dockerignore
+
+# Git repository information.
+.git
+.git/
+.gitignore
+
+# diesel-cli configuration file. Not needed by diesel_migrations crate.
+diesel.toml
+
+# Docker stuff.
+docker-compose.yml
+Dockerfile
+
+# Other things unrelated to building the image.
+README.md

@@ -16,7 +16,7 @@ RUN apt-get install -y curl build-essential libpq-dev libpq5
 WORKDIR /build
 COPY src /build/src/
 COPY migrations /build/migrations/
-COPY diesel.toml Cargo.lock Cargo.toml Rocket.toml /build/
+COPY Cargo.lock Cargo.toml Rocket.toml /build/
 COPY rust-toolchain /tmp/
 
 # ENV: Declare variables that are used by Docker and are set as environment variables for RUN commands.
@@ -52,7 +52,6 @@ WORKDIR /usr/local/bin/
 COPY migrations migrations
 COPY templates templates
 COPY static static
-COPY .env .env
 COPY Rocket.toml Rocket.toml
 
 ENV WEBSHOP_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database/${POSTGRES_DB}"
