@@ -16,7 +16,7 @@ RUN apt-get install -y curl build-essential libpq-dev libpq5
 WORKDIR /build
 COPY src /build/src/
 COPY migrations /build/migrations/
-COPY Cargo.lock Cargo.toml Rocket.toml /build/
+COPY Cargo.lock Cargo.toml /build/
 COPY rust-toolchain /tmp/
 
 # ENV: Declare variables that are used by Docker and are set as environment variables for RUN commands.
@@ -31,17 +31,13 @@ RUN curl "https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/${RUSTUP
 # Add the path to the installed rustup (installed as root, so in root $HOME).
 ENV PATH=/root/.cargo/bin:$PATH
 
-RUN cargo build
+RUN cargo build --release
 
 # ========================
 # = IMAGE CREATION STAGE =
 # ========================
 
 FROM ubuntu:jammy
-
-ARG POSTGRES_USER
-ARG POSTGRES_PASSWORD
-ARG POSTGRES_DB
 
 RUN apt-get update
 RUN apt-get install -y libpq5
@@ -52,9 +48,7 @@ WORKDIR /usr/local/bin/
 COPY migrations migrations
 COPY templates templates
 COPY static static
-COPY Rocket.toml Rocket.toml
-
-ENV WEBSHOP_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database/${POSTGRES_DB}"
+COPY webshop.toml* webshop.toml
 
 # ENTRYPOINT: Can't be overriden at runtime. Image has single purpose.
 # CMD: Default command to run. Can be overriden at runtime (for example in docker-compose.yml).
