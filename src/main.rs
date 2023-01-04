@@ -2,16 +2,18 @@
 extern crate rocket;
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 use crate::database::models::{Product, User};
 use crate::database::WebshopDatabase;
 use crate::schema::products::dsl::products;
 use crate::schema::users::dsl::users;
-use diesel::RunQueryDsl;
+use diesel::{RunQueryDsl, PgConnection};
 use rocket::fs::FileServer;
 use rocket::http::{CookieJar, Status};
 use rocket::request::{FromRequest, Outcome};
-use rocket::{Build, Request, Rocket};
+use rocket::{Build, Config, Request, Rocket};
 use rocket_dyn_templates::{context, Template};
 
 mod api;
@@ -110,9 +112,19 @@ async fn unauthorized() -> Template {
     Template::render("error/401", context! {})
 }
 
+embed_migrations!();
+
 #[launch]
 fn rocket() -> Rocket<Build> {
-    rocket::build()
+    let database_url = std::env::var("WEBSHOP_DATABASE_URL").expect("WEBSHOP_DATABASE_URL needs to be set!");
+    let connection: PgConnection = diesel::connection::Connection::establish(&database_url).unwrap();
+    diesel_migrations::run_pending_migrations(&connection).expect("Diesel couldn't run pending migrations.");
+
+    let config = rocket::Config::figment().merge((
+        "databases.webshop.url",
+        database_url,
+    ));
+    rocket::custom(config)
         .mount("/", routes![index, login, admin])
         .mount(
             "/api/",

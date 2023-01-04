@@ -31,7 +31,7 @@ RUN curl "https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/${RUSTUP
 # Add the path to the installed rustup (installed as root, so in root $HOME).
 ENV PATH=/root/.cargo/bin:$PATH
 
-RUN cargo build --release
+RUN cargo build
 
 # ========================
 # = IMAGE CREATION STAGE =
@@ -39,17 +39,25 @@ RUN cargo build --release
 
 FROM ubuntu:jammy
 
+ARG POSTGRES_USER
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_DB
+
 RUN apt-get update
 RUN apt-get install -y libpq5
 
-COPY --from=build /build/target/release/webshop /usr/local/bin/webshop
+COPY --from=build /build/target/debug/webshop /usr/local/bin/webshop
 
 WORKDIR /usr/local/bin/
+COPY migrations migrations
 COPY templates templates
 COPY static static
 COPY .env .env
 COPY Rocket.toml Rocket.toml
 
+ENV WEBSHOP_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database/${POSTGRES_DB}"
+
 # ENTRYPOINT: Can't be overriden at runtime. Image has single purpose.
 # CMD: Default command to run. Can be overriden at runtime (for example in docker-compose.yml).
+
 ENTRYPOINT ["webshop"]
