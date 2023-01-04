@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {{> components/common-head }}
+        <script src="/static/bootstrap.js"></script>
+    </head>
+    <body>
+        <p>Welcome to LaptopPersonalizer. This is the first time you launched this site. Please create the administrator account.</p>
+        <form id="form-create-administrator" onsubmit="return createAdministrator()">
+            <label for="form-create_administrator-first-name">First name</label>
+            <input id="form-create_administrator-first-name" name="first_name" type="text"><br>
+            <label for="form-create_administrator-surname">Surname</label>
+            <input id="form-create_administrator-surname" name="surname" type="text"><br>
+            <label for="form-create_administrator-phone">Phone</label>
+            <input id="form-create_administrator-phone" name="phone" type="tel"><br>
+            <label for="form-create_administrator-email">Email</label>
+            <input id="form-create_administrator-email" name="email" type="email"><br>
+            <label for="form-create_administrator-password">Password</label>
+            <input id="form-create_administrator-password" name="password" type="password"><br>
+            <input id="form-create_administrator-submit" name="submit" type="submit" value="Add">
+        </form>
+    </body>
+</html>

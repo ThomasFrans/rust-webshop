@@ -1,20 +1,27 @@
 pub mod models;
 
 use crate::database::models::{Product, User};
-use crate::schema;
+use crate::{CONFIGURATION, schema};
 use crate::schema::products as products_schema;
 use crate::schema::products::dsl::products;
 use crate::schema::users as users_schema;
 use crate::schema::users::dsl::users;
 use diesel::data_types::PgNumeric;
 use diesel::result::Error;
-use diesel::{ExpressionMethods, Insertable, QueryDsl, RunQueryDsl, Table};
+use diesel::{ExpressionMethods, Insertable, PgConnection, QueryDsl, RunQueryDsl, Table};
 use rocket::http::hyper::body::HttpBody;
 use rocket_sync_db_pools::database;
 
 /// A wrapper that can serve as a request guard of any rocket route.
 #[database("webshop")]
 pub struct WebshopDatabase(diesel::PgConnection);
+
+/// Run all the pending migrations for the database specified by environment variable
+/// WEBSHOP_DATABASE_URL.
+pub fn run_pending_migrations() -> Result<(), Box<dyn std::error::Error>> {
+    let connection: PgConnection = diesel::connection::Connection::establish(&CONFIGURATION.get().unwrap().database_url).unwrap();
+    diesel_migrations::run_pending_migrations(&connection).map_err(|_| Box::from("Can't run migrations."))
+}
 
 /// Any error that can arise from interaction with the database.
 #[non_exhaustive]
@@ -152,4 +159,12 @@ pub async fn create_user(
                 .map_err(|_| DatabaseError::Query)
         })
         .await
+}
+
+pub async fn fetch_users(database: &WebshopDatabase) -> Result<Vec<User>, DatabaseError> {
+    database.run(|c| {
+        users
+            .get_results::<User>(c)
+            .map_err(|_| DatabaseError::Query)
+    }).await
 }

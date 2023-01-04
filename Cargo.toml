@@ -32,6 +32,11 @@ rocket_dyn_templates = { version = "0.1.0-rc.2", features = ["handlebars"] }
 diesel = { version = "1.4.8", features = ["postgres"]}
 diesel_migrations = "1.4.0"
 bcrypt = "0.13.0"
+serde = "1.0.152"
+toml = "0.5.10"
+once_cell = "1.17.0"
+directories = "4.0.1"
+dotenvy = "0.15.6"
 
 [dependencies.rocket]
 version = "0.5.0-rc.2"

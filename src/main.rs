@@ -5,6 +5,8 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
+use std::process::exit;
+use once_cell::sync::OnceCell;
 use crate::database::models::{Product, User};
 use crate::database::WebshopDatabase;
 use crate::schema::products::dsl::products;
@@ -14,25 +16,50 @@ use rocket::fs::FileServer;
 use rocket::http::{CookieJar, Status};
 use rocket::request::{FromRequest, Outcome};
 use rocket::{Build, Config, Request, Rocket};
+use rocket::form::validate::Len;
+use rocket::response::{Redirect, Responder};
 use rocket_dyn_templates::{context, Template};
+use crate::configuration::Configuration;
 
 mod api;
 mod database;
 mod ext_traits;
 mod schema;
+mod configuration;
+
+static CONFIGURATION: OnceCell<Configuration> = OnceCell::new();
+
+#[derive(Responder)]
+enum Index {
+    Page(Template),
+    Bootstrap(Redirect),
+}
 
 #[get("/")]
-async fn index(mut db: WebshopDatabase, cookiejar: &CookieJar<'_>) -> Result<Template, Status> {
-    let db_products = db
-        .run(|c| products.load::<Product>(c).map_err(|_| Status::BadRequest))
-        .await?;
-    Ok(Template::render(
-        "index",
-        context! {
+async fn index(mut db: WebshopDatabase, cookiejar: &CookieJar<'_>) -> Result<Index, Status> {
+    if database::fetch_users(&db).await.map_err(|_| Status::InternalServerError)?.is_empty() {
+        Ok(Index::Bootstrap(Redirect::to("bootstrap")))
+    } else {
+        let db_products = db
+            .run(|c| products.load::<Product>(c).map_err(|_| Status::BadRequest))
+            .await?;
+        Ok(Index::Page(Template::render(
+            "index",
+            context! {
             db_products,
             logged_in: cookiejar.get_private("admin").is_some(),
         },
-    ))
+        )))
+    }
+
+}
+
+#[get("/bootstrap")]
+async fn bootstrap() -> Template {
+    Template::render(
+        "bootstrap",
+        context! {},
+    )
 }
 
 #[get("/login")]
@@ -112,20 +139,29 @@ async fn unauthorized() -> Template {
     Template::render("error/401", context! {})
 }
 
-embed_migrations!();
-
 #[launch]
 fn rocket() -> Rocket<Build> {
-    let database_url = std::env::var("WEBSHOP_DATABASE_URL").expect("WEBSHOP_DATABASE_URL needs to be set!");
-    let connection: PgConnection = diesel::connection::Connection::establish(&database_url).unwrap();
-    diesel_migrations::run_pending_migrations(&connection).expect("Diesel couldn't run pending migrations.");
+    CONFIGURATION.set(Configuration::new().map_err(|err| {
+        println!("Error: {}", err);
+        exit(1);
+    }).unwrap()).unwrap();
 
-    let config = rocket::Config::figment().merge((
+    database::run_pending_migrations().expect("Can't run database migrations.");
+
+    let config = Config::figment().merge((
         "databases.webshop.url",
-        database_url,
-    ));
+        &CONFIGURATION.get().unwrap().database_url,
+    ))
+        .merge(("address", &CONFIGURATION.get().unwrap().webserver_address.clone().unwrap_or(String::from("localhost"))))
+        .merge(("port", &CONFIGURATION.get().unwrap().webserver_port.unwrap_or(8000)))
+        .merge(("secret_key", &CONFIGURATION.get().unwrap().secret_key));
     rocket::custom(config)
-        .mount("/", routes![index, login, admin])
+        .mount("/", routes![
+            index,
+            login,
+            admin,
+            bootstrap,
+        ])
         .mount(
             "/api/",
             routes![
