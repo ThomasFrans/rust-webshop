@@ -1,7 +1,7 @@
-use std::error::Error;
-use std::fmt::{Display, Formatter, write};
-use std::{env, fs};
 use rocket::serde::Deserialize;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+use std::{env, fs};
 
 /// Configuration for the webshop. Option values have a sensible default and thus aren't required
 /// to be specified. Other values are required for the webshop to run.
@@ -31,7 +31,9 @@ impl Display for CreationError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             CreationError::InvalidConfigurationFile => write!(f, "Configuration file is invalid."),
-            CreationError::InvalidEnvironmentVariable(variable) => write!(f, "Invalid environment variable: {}.", variable),
+            CreationError::InvalidEnvironmentVariable(variable) => {
+                write!(f, "Invalid environment variable: {variable}.")
+            }
             CreationError::NoConfiguration => write!(f, "No configuration specified."),
         }
     }
@@ -46,12 +48,9 @@ impl Configuration {
     /// Environment variables > config file.
     pub fn new() -> Result<Self, CreationError> {
         let mut configuration_builder = ConfigurationBuilder::default();
-        configuration_builder
-            .add_cwd_config_file()?
-            .add_env()?;
+        configuration_builder.add_cwd_config_file()?.add_env()?;
         configuration_builder.build()
     }
-
 }
 
 #[derive(Default, Deserialize)]
@@ -77,7 +76,9 @@ impl ConfigurationBuilder {
             self.webserver_address = Some(webserver_address);
         }
         if let Ok(webserver_port) = env::var("WEBSHOP_PORT") {
-            self.webserver_port = Some(webserver_port.parse().map_err(|_| CreationError::InvalidEnvironmentVariable(String::from("WEBSHOP_PORT")))?);
+            self.webserver_port = Some(webserver_port.parse().map_err(|_| {
+                CreationError::InvalidEnvironmentVariable(String::from("WEBSHOP_PORT"))
+            })?);
         }
         if let Ok(database_url) = env::var("WEBSHOP_DATABASE_URL") {
             self.database_url = Some(database_url);
@@ -90,7 +91,8 @@ impl ConfigurationBuilder {
 
     pub fn add_cwd_config_file(&mut self) -> Result<&mut Self, CreationError> {
         if let Ok(config_file) = fs::read_to_string("webshop.toml") {
-            let config = toml::from_str::<ConfigurationBuilder>(&config_file).map_err(|_| CreationError::InvalidConfigurationFile)?;
+            let config = toml::from_str::<ConfigurationBuilder>(&config_file)
+                .map_err(|_| CreationError::InvalidConfigurationFile)?;
             if let Some(webserver_address) = config.webserver_address {
                 self.webserver_address = Some(webserver_address);
             }

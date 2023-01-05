@@ -2,30 +2,28 @@
 extern crate rocket;
 #[macro_use]
 extern crate diesel;
-#[macro_use]
-extern crate diesel_migrations;
 
-use std::process::exit;
-use once_cell::sync::OnceCell;
+use crate::configuration::Configuration;
 use crate::database::models::{Product, User};
 use crate::database::WebshopDatabase;
+use crate::schema::products as products_schema;
 use crate::schema::products::dsl::products;
+use crate::schema::users as users_schema;
 use crate::schema::users::dsl::users;
-use diesel::{RunQueryDsl, PgConnection};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use once_cell::sync::OnceCell;
 use rocket::fs::FileServer;
 use rocket::http::{CookieJar, Status};
 use rocket::request::{FromRequest, Outcome};
-use rocket::{Build, Config, Request, Rocket};
-use rocket::form::validate::Len;
 use rocket::response::{Redirect, Responder};
+use rocket::{Build, Config, Request, Rocket};
 use rocket_dyn_templates::{context, Template};
-use crate::configuration::Configuration;
+use std::process::exit;
 
 mod api;
-mod database;
-mod ext_traits;
-mod schema;
 mod configuration;
+mod database;
+mod schema;
 
 static CONFIGURATION: OnceCell<Configuration> = OnceCell::new();
 
@@ -36,8 +34,12 @@ enum Index {
 }
 
 #[get("/")]
-async fn index(mut db: WebshopDatabase, cookiejar: &CookieJar<'_>) -> Result<Index, Status> {
-    if database::fetch_users(&db).await.map_err(|_| Status::InternalServerError)?.is_empty() {
+async fn index(db: WebshopDatabase, cookiejar: &CookieJar<'_>) -> Result<Index, Status> {
+    if database::fetch_users(&db)
+        .await
+        .map_err(|_| Status::InternalServerError)?
+        .is_empty()
+    {
         Ok(Index::Bootstrap(Redirect::to("bootstrap")))
     } else {
         let db_products = db
@@ -46,20 +48,16 @@ async fn index(mut db: WebshopDatabase, cookiejar: &CookieJar<'_>) -> Result<Ind
         Ok(Index::Page(Template::render(
             "index",
             context! {
-            db_products,
-            logged_in: cookiejar.get_private("admin").is_some(),
-        },
+                db_products,
+                logged_in: cookiejar.get_private("admin").is_some(),
+            },
         )))
     }
-
 }
 
 #[get("/bootstrap")]
 async fn bootstrap() -> Template {
-    Template::render(
-        "bootstrap",
-        context! {},
-    )
+    Template::render("bootstrap", context! {})
 }
 
 #[get("/login")]
@@ -112,17 +110,27 @@ impl<'r> FromRequest<'r> for UserIdGuard {
 
 #[get("/admin")]
 async fn admin(
-    mut db: WebshopDatabase,
+    db: WebshopDatabase,
     cookiejar: &CookieJar<'_>,
     _userid: UserIdGuard,
     _admin: AdminGuard,
 ) -> Result<Template, Status> {
     let people = db
-        .run(|c| users.load::<User>(c).map_err(|_| Status::BadRequest))
+        .run(|c| {
+            users
+                .order(users_schema::user_id.asc())
+                .load::<User>(c)
+                .map_err(|_| Status::BadRequest)
+        })
         .await?;
 
     let db_products = db
-        .run(|c| products.load::<Product>(c).map_err(|_| Status::BadRequest))
+        .run(|c| {
+            products
+                .order(products_schema::product_id.asc())
+                .load::<Product>(c)
+                .map_err(|_| Status::BadRequest)
+        })
         .await?;
     Ok(Template::render(
         "admin",
@@ -139,29 +147,44 @@ async fn unauthorized() -> Template {
     Template::render("error/401", context! {})
 }
 
+// #[launch] creates the tokio runtime, creates the default Rocket configuration (using Figment),
+// and then calls block_on on the rocket future. It wasn't magic after all :)
 #[launch]
 fn rocket() -> Rocket<Build> {
-    CONFIGURATION.set(Configuration::new().map_err(|err| {
-        println!("Error: {}", err);
-        exit(1);
-    }).unwrap()).unwrap();
+    CONFIGURATION
+        .set(
+            Configuration::new()
+                .map_err(|err| {
+                    println!("Error: {err}");
+                    exit(1);
+                })
+                .unwrap(),
+        )
+        .unwrap();
 
     database::run_pending_migrations().expect("Can't run database migrations.");
 
-    let config = Config::figment().merge((
-        "databases.webshop.url",
-        &CONFIGURATION.get().unwrap().database_url,
-    ))
-        .merge(("address", &CONFIGURATION.get().unwrap().webserver_address.clone().unwrap_or(String::from("localhost"))))
-        .merge(("port", &CONFIGURATION.get().unwrap().webserver_port.unwrap_or(8000)))
+    let config = Config::figment()
+        .merge((
+            "databases.webshop.url",
+            &CONFIGURATION.get().unwrap().database_url,
+        ))
+        .merge((
+            "address",
+            &CONFIGURATION
+                .get()
+                .unwrap()
+                .webserver_address
+                .clone()
+                .unwrap_or(String::from("localhost")),
+        ))
+        .merge((
+            "port",
+            &CONFIGURATION.get().unwrap().webserver_port.unwrap_or(8000),
+        ))
         .merge(("secret_key", &CONFIGURATION.get().unwrap().secret_key));
     rocket::custom(config)
-        .mount("/", routes![
-            index,
-            login,
-            admin,
-            bootstrap,
-        ])
+        .mount("/", routes![index, login, admin, bootstrap,])
         .mount(
             "/api/",
             routes![
@@ -169,8 +192,8 @@ fn rocket() -> Rocket<Build> {
                 api::users::remove,
                 api::login::login,
                 api::login::logout,
-                // api::products::add,
-                // api::products::edit
+                api::products::add,
+                api::products::edit
             ],
         )
         .mount("/static/", FileServer::from("static/"))

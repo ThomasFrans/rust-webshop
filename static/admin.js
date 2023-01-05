@@ -84,7 +84,7 @@ function addProduct() {
                 let response = JSON.parse(this.responseText);
                 form.reset();
 
-                product_table.innerHTML += "<tr id=\"table-products-row-"+response+"\"><td>"+response+"</td><td>"+name+"</td><td>"+description+"</td><td>"+price+"</td><td>"+image_uri+"</td><td>1</td></tr>";
+                product_table.innerHTML += "<tr id=\"table-products-row-"+response["product_id"]+"\"><td>"+response["product_id"]+"</td><td>"+name+"</td><td>"+description+"</td><td>"+price+"</td><td>"+image_uri+"</td><td>"+response["is_active"]+"</td></tr>";
             } else {
                 alert("Email already in use. Use a different email.")
             }
@@ -129,7 +129,7 @@ function editProduct() {
                 let response = JSON.parse(this.responseText);
                 form.reset();
 
-                product_table.outerHTML = "<tr id=\"table-products-row-"+response+"\"><td>"+response+"</td><td>"+response["name"]+"</td><td>"+response["description"]+"</td><td>"+response["price"]+"</td><td>"+response["image_uri"]+"</td><td>"+response["is_active"]+"</td></tr>";
+                product_table.outerHTML = "<tr id=\"table-products-row-"+response["product_id"]+"\"><td>"+response["product_id"]+"</td><td>"+response["name"]+"</td><td>"+response["description"]+"</td><td>"+response["price"]+"</td><td>"+response["image_uri"]+"</td><td>"+response["is_active"]+"</td></tr>";
             } else {
                 alert("Failed to update product!")
             }

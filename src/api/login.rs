@@ -2,7 +2,7 @@ use crate::database::{user_with_email, WebshopDatabase};
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar, Status};
 
-#[derive(Debug, FromForm)]
+#[derive(FromForm)]
 pub struct LoginData<'a> {
     email: &'a str,
     password: &'a str,
@@ -10,11 +10,11 @@ pub struct LoginData<'a> {
 
 #[post("/login", data = "<login>")]
 pub async fn login(
-    mut db: WebshopDatabase,
+    database: WebshopDatabase,
     cookiejar: &CookieJar<'_>,
     login: Form<LoginData<'_>>,
 ) -> Result<(), Status> {
-    let user_row = user_with_email(&mut db, login.email)
+    let user_row = user_with_email(&database, login.email)
         .await
         .map_err(|_| Status::InternalServerError)?;
     if user_row.is_active

@@ -1,15 +1,12 @@
 pub mod models;
 
 use crate::database::models::{Product, User};
-use crate::{CONFIGURATION, schema};
 use crate::schema::products as products_schema;
 use crate::schema::products::dsl::products;
 use crate::schema::users as users_schema;
 use crate::schema::users::dsl::users;
-use diesel::data_types::PgNumeric;
-use diesel::result::Error;
-use diesel::{ExpressionMethods, Insertable, PgConnection, QueryDsl, RunQueryDsl, Table};
-use rocket::http::hyper::body::HttpBody;
+use crate::{schema, CONFIGURATION};
+use diesel::{Connection, ExpressionMethods, Insertable, PgConnection, QueryDsl, RunQueryDsl};
 use rocket_sync_db_pools::database;
 
 /// A wrapper that can serve as a request guard of any rocket route.
@@ -19,14 +16,16 @@ pub struct WebshopDatabase(diesel::PgConnection);
 /// Run all the pending migrations for the database specified by environment variable
 /// WEBSHOP_DATABASE_URL.
 pub fn run_pending_migrations() -> Result<(), Box<dyn std::error::Error>> {
-    let connection: PgConnection = diesel::connection::Connection::establish(&CONFIGURATION.get().unwrap().database_url).unwrap();
-    diesel_migrations::run_pending_migrations(&connection).map_err(|_| Box::from("Can't run migrations."))
+    let connection: PgConnection =
+        diesel::connection::Connection::establish(&CONFIGURATION.get().unwrap().database_url)
+            .unwrap();
+    diesel_migrations::run_pending_migrations(&connection)
+        .map_err(|_| Box::from("Can't run migrations."))
 }
 
 /// Any error that can arise from interaction with the database.
 #[non_exhaustive]
 pub enum DatabaseError {
-    Connection,
     Query,
 }
 
@@ -34,76 +33,77 @@ pub enum DatabaseError {
 #[derive(Insertable)]
 #[table_name = "products_schema"]
 pub struct NewProduct {
-    pub(crate) name: String,
-    pub(crate) description: String,
-    pub(crate) image_uri: String,
-    pub(crate) price: f32,
+    pub name: String,
+    pub description: String,
+    pub image_uri: String,
+    pub price: f32,
 }
 
 /// Represents a new user that wants to be inserted into the database.
 #[derive(Insertable)]
 #[table_name = "users_schema"]
 pub struct NewUser {
-    pub(crate) first_name: String,
-    pub(crate) surname: String,
-    pub(crate) phone: String,
-    pub(crate) email: String,
-    pub(crate) password: String,
-    pub(crate) is_admin: bool,
+    pub first_name: String,
+    pub surname: String,
+    pub phone: String,
+    pub email: String,
+    pub password: String,
+    pub is_admin: bool,
 }
 
 /// Represents an update to a single product in the database.
-pub struct UpdateProduct<'a> {
-    pub(crate) product_id: u64,
-    pub(crate) name: Option<&'a str>,
-    pub(crate) description: Option<&'a str>,
-    pub(crate) price: Option<f32>,
-    pub(crate) image_uri: Option<&'a str>,
+pub struct UpdateProduct {
+    pub product_id: i64,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub price: Option<f32>,
+    pub image_uri: Option<String>,
 }
 
-// pub async fn update_product(
-//     database: &mut WebshopDatabase,
-//     update: &UpdateProduct<'_>,
-// ) -> Result<Product, DatabaseError> {
-//     database.transaction::<_, Error, _>(|| {
-//         if let Some(name) = update.name {
-//             diesel::update(products)
-//                 .filter(products::product_id.eq(update.product_id))
-//                 .set(schema::products::name.eq(name))
-//                 .execute(&mut *database)
-//                 .map_err(|_| DatabaseError::Query)?;
-//
-//         }
-//         if let Some(description) = update.description {
-//             diesel::update(products)
-//                 .filter(schema::products::product_id.eq(update.product_id))
-//                 .set(products::description.eq(description))
-//                 .execute(&mut *database)
-//                 .map_err(|_| DatabaseError::Query)?;
-//         }
-//         if let Some(price) = update.price {
-//             diesel::update(products)
-//                 .filter(products::product_id.eq(update.product_id))
-//                 .set(products::description.eq(price))
-//                 .execute(&mut *database)
-//                 .map_err(|_| DatabaseError::Query)?;
-//         }
-//         if let Some(image_uri) = update.image_uri {
-//             diesel::update(products)
-//                 .filter(products::product_id.eq(update.product_id))
-//                 .set(products::description.eq(image_uri))
-//                 .execute(&mut *database)
-//                 .map_err(|_| DatabaseError::Query)?;
-//         }
-//     });
-//     products
-//         .filter(products::product_id.eq(update.product_id))
-//         .first::<Product>(database)
-//         .map_err(|_| DatabaseError::Connection)
-// }
+pub async fn update_product(
+    database: &WebshopDatabase,
+    update: UpdateProduct,
+) -> Result<Product, DatabaseError> {
+    database
+        .run(move |c| {
+            c.transaction::<_, diesel::result::Error, _>(|| {
+                if let Some(name) = update.name {
+                    diesel::update(products)
+                        .filter(products_schema::product_id.eq(update.product_id))
+                        .set(products_schema::name.eq(name))
+                        .execute(c)?;
+                }
+                if let Some(description) = update.description {
+                    diesel::update(products)
+                        .filter(products_schema::product_id.eq(update.product_id))
+                        .set(products_schema::description.eq(description))
+                        .execute(c)?;
+                }
+                if let Some(price) = update.price {
+                    diesel::update(products)
+                        .filter(products_schema::product_id.eq(update.product_id))
+                        .set(products_schema::price.eq(price))
+                        .execute(c)?;
+                }
+                if let Some(image_uri) = update.image_uri {
+                    diesel::update(products)
+                        .filter(products_schema::product_id.eq(update.product_id))
+                        .set(products_schema::image_uri.eq(image_uri))
+                        .execute(c)?;
+                }
+                Ok(())
+            })
+            .unwrap();
+            products
+                .filter(products_schema::product_id.eq(update.product_id))
+                .first::<Product>(c)
+                .map_err(|_| DatabaseError::Query)
+        })
+        .await
+}
 
 pub async fn create_product(
-    database: &mut WebshopDatabase,
+    database: &WebshopDatabase,
     new_product: NewProduct,
 ) -> Result<Product, DatabaseError> {
     database
@@ -117,7 +117,7 @@ pub async fn create_product(
 }
 
 pub async fn user_with_email(
-    database: &mut WebshopDatabase,
+    database: &WebshopDatabase,
     email: &str,
 ) -> Result<User, DatabaseError> {
     let email = email.to_owned();
@@ -131,10 +131,7 @@ pub async fn user_with_email(
         .await
 }
 
-pub async fn delete_user(
-    database: &mut WebshopDatabase,
-    user_id: i64,
-) -> Result<(), DatabaseError> {
+pub async fn delete_user(database: &WebshopDatabase, user_id: i64) -> Result<(), DatabaseError> {
     database
         .run(move |c| {
             diesel::update(users)
@@ -162,9 +159,11 @@ pub async fn create_user(
 }
 
 pub async fn fetch_users(database: &WebshopDatabase) -> Result<Vec<User>, DatabaseError> {
-    database.run(|c| {
-        users
-            .get_results::<User>(c)
-            .map_err(|_| DatabaseError::Query)
-    }).await
+    database
+        .run(|c| {
+            users
+                .get_results::<User>(c)
+                .map_err(|_| DatabaseError::Query)
+        })
+        .await
 }
